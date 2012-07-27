@@ -47,6 +47,8 @@ import os.path
 DECOR_DIR=1
 DECOR_FILE=2
 
+SECTIONS=('commands','packages','pre','post','post.header')
+
 class Cat(object):
     _pre=None
     _post=None
@@ -131,8 +133,10 @@ class Cat(object):
         
 class Assembler(object):
     _base_dir=None
-    def __init__(self,base_dir):
+    _ignore_dirs=None
+    def __init__(self,base_dir,ignore_dirs):
         self._base_dir=base_dir
+        self._ignore_dirs=ignore_dirs
 
     def setup(self,template_id):
         template_dir=os.path.join(self._base_dir,'templates',template_id)
@@ -141,11 +145,71 @@ class Assembler(object):
         ks_pre=os.path.join(template_dir,'pre')
         ks_post=os.path.join(template_dir,'post')
         ks_post_header=os.path.join(template_dir,'post.header')
-        os.makedirs(ks_commands)
-        os.makedirs(ks_packages)
-        os.makedirs(ks_pre)
-        os.makedirs(ks_post)
-        os.makedirs(ks_post_header)
+        def _my_mkdir(my_dir):
+            try:
+                os.makedirs(my_dir)
+            except OSError:
+                # very crude, should handle errorcode instead:
+                # OSError: [Errno 17] File exists: '
+                pass
+        _my_mkdir(ks_commands)
+        _my_mkdir(ks_packages)
+        _my_mkdir(ks_pre)
+        _my_mkdir(ks_post)
+        _my_mkdir(ks_post_header)
+
+    def listparts(self):
+        template_dir=os.path.join(self._base_dir,'parts')
+        ks_commands=os.path.join(template_dir,'commands')
+        ks_packages=os.path.join(template_dir,'packages')
+        ks_pre=os.path.join(template_dir,'pre')
+        ks_post=os.path.join(template_dir,'post')
+        ks_post_header=os.path.join(template_dir,'post.header')
+        
+        cat=Cat()
+        # cat.echo('commands')
+        for cmd in os.listdir(ks_commands):
+            if not (cmd in self._ignore_dirs):
+                cat.echo('commands '+cmd)
+
+        for pkg in os.listdir(ks_packages):
+            if not (pkg in self._ignore_dirs):
+                cat.echo('packages '+pkg)
+
+        for pre in os.listdir(ks_pre):
+            if not (pre in self._ignore_dirs):
+                cat.echo('pre '+pre)
+
+        for post_header in os.listdir(ks_post_header):
+            if not (post_header in self._ignore_dirs):
+                cat.echo('post.header '+post_header)
+
+        for post in os.listdir(ks_post):
+            if not (post in self._ignore_dirs):
+                cat.echo('post '+post)
+
+    def create(self,template_id,parts):
+        parts_dir=os.path.join(self._base_dir,'parts')
+        
+        template_dir=os.path.join(self._base_dir,'templates',template_id)
+
+        cat=Cat()
+        # create FS layout
+        self.setup(template_id)
+
+        # for p in parts.keys():
+        for p in SECTIONS:
+            # walking through sections: commands,packages,pre,post,post.header
+            if not parts.has_key(p):
+                continue
+            for pe in parts[p]:
+                # we have just hardcoded FS layout...
+                src_part=os.path.join('../../../parts',p,pe)
+                dst_part=os.path.join(template_dir,p,pe)
+                try:
+                    os.symlink(src_part,dst_part)
+                except OSError:
+                    print("Can't link {1} to {0}, skipping".format(src_part,dst_part))
 
     def clone(self,src_template_id,dst_template_id):
         pass
@@ -186,21 +250,43 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser()
 
     parser.add_argument('--base-dir','-b',type=str,help='',default='.')
+    parser.add_argument('--ignore-dirs','-i',type=str,help='',default='RCS')
     subparsers=parser.add_subparsers(dest='command',help='')
 
     parser_assemble=subparsers.add_parser('assemble')
     parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
     parser_assemble.add_argument('--packages-opts','-o',type=str,help='',default='--nobase')
-    parser_assemble.add_argument('--ignore-dirs','-i',type=str,help='',default='RCS')
 
-    parser_assemble=subparsers.add_parser('setup')
+    parser_assemble=subparsers.add_parser('init')
     parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
 
+    parser_assemble=subparsers.add_parser('listparts')
+
+    parser_assemble=subparsers.add_parser('listtemplates')
+
+    parser_assemble=subparsers.add_parser('clone')
+
+    parser_assemble=subparsers.add_parser('create')
+    parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
+    for s in SECTIONS:
+        parser_assemble.add_argument('--'+s,type=str,help='',required=True,default=None)
+
     args=parser.parse_args(sys.argv[1:])
+    ignore_dirs=args.ignore_dirs.split(',')
     if args.command == 'assemble':
-        a=Assembler(args.base_dir)
-        a.assemble(args.template_id,args.packages_opts,args.ignore_dirs)
-    elif args.command=='setup':
-        a=Assembler(args.base_dir)
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.assemble(args.template_id,args.packages_opts,ignore_dirs)
+    elif args.command=='init':
+        a=Assembler(args.base_dir,ignore_dirs)
         a.setup(args.template_id)
+    elif args.command=='listparts':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.listparts()
+    elif args.command=='create':
+        a=Assembler(args.base_dir,ignore_dirs)
+        my_parts={}
+        vargs=vars(args)
+        for s in SECTIONS:
+            my_parts[s]=vargs[s].split(',')
+        a.create(args.template_id,my_parts)
 
