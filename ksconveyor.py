@@ -134,6 +134,22 @@ class Assembler(object):
     def __init__(self,base_dir):
         self._base_dir=base_dir
 
+    def setup(self,template_id):
+        template_dir=os.path.join(self._base_dir,'templates',template_id)
+        ks_commands=os.path.join(template_dir,'commands')
+        ks_packages=os.path.join(template_dir,'packages')
+        ks_pre=os.path.join(template_dir,'pre')
+        ks_post=os.path.join(template_dir,'post')
+        ks_post_header=os.path.join(template_dir,'post.header')
+        os.makedirs(ks_commands)
+        os.makedirs(ks_packages)
+        os.makedirs(ks_pre)
+        os.makedirs(ks_post)
+        os.makedirs(ks_post_header)
+
+    def clone(self,src_template_id,dst_template_id):
+        pass
+
     def assemble(self,template_id,pkg_opts,ignore_dirs):
         template_dir=os.path.join(self._base_dir,'templates',template_id)
         ks_commands=os.path.join(template_dir,'commands')
@@ -177,8 +193,14 @@ if __name__ == '__main__':
     parser_assemble.add_argument('--packages-opts','-o',type=str,help='',default='--nobase')
     parser_assemble.add_argument('--ignore-dirs','-i',type=str,help='',default='RCS')
 
+    parser_assemble=subparsers.add_parser('setup')
+    parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
+
     args=parser.parse_args(sys.argv[1:])
     if args.command == 'assemble':
         a=Assembler(args.base_dir)
         a.assemble(args.template_id,args.packages_opts,args.ignore_dirs)
+    elif args.command=='setup':
+        a=Assembler(args.base_dir)
+        a.setup(args.template_id)
 
