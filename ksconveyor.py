@@ -173,7 +173,89 @@ class Cat(object):
                         self.echo(ps.format(path=file_path,dir_basename=dir_basename,file_basename=filename))
                 if dpd:
                     self.echo(ps.format(path=path,dir_basename=dir_basename,file_basename=''))
-        
+
+class KSPart(object):
+    _name=None
+    _path=None
+    def __init__(self,path):
+        self._name=os.path.basename(path)
+        self._path=path
+
+    def getName(self):
+        return self._name
+
+    def setName(self,name):
+        """Changes name AND renames corresponding file"""
+        dir_path=os.dirname(self._path)
+        new_path=os.path.join(dir_path,name)
+        os.rename(self._path,new_path)
+        self._name=name
+
+    name=property(getName,setName)
+
+class KSPartsDB(object):
+    _db=None
+    _path=None
+    _blacklist=None
+    def __init__(self,path,blacklist=[]):
+        self._db={}
+        self._path=path
+        self._blacklist=blacklist
+
+    def load(self):
+        for s in SECTIONS:
+            s_path=os.path.join(self._path,s)
+            if not self._db.has_key(s):
+                self._db[s]={}
+            for pn in os.listdir(s_path):
+                if not pn in self._blacklist:
+                    self._db[s][pn]=KSPart(os.path.join(s_path,pn))
+
+    def getDB(self):
+        return self._db
+
+    db=property(getDB)
+
+    def __getitem__(self,k):
+        return self._db[k]
+
+class KSTemplate(object):
+    # Dictionary with parts divided into sections
+    _parts=None
+    # template ID
+    _name=None
+    _path=None
+    def __init__(self,template_id,path):
+        self._name=template_id
+        self._parts={}
+        self._path=path
+
+    def load(self):
+        for s in SECTIONS:
+            self._parts[s]={}
+            s_path=os.path.join(self._path,s)
+            for p in os.listdir(s_path):
+                self._parts[s][p]=KSPart(os.path.join(s_path,p))
+
+    def init(self):
+        template_dir=self._path
+        def _my_mkdir(my_dir):
+            try:
+                os.makedirs(my_dir)
+            except OSError:
+                # very crude, should handle errorcode instead:
+                # OSError: [Errno 17] File exists: '
+                pass
+            for s in SECTIONS:
+                _my_mkdir(os.path.join(template_dir,s)
+
+class KSTemplateDB(object):
+    _db=None
+    _path=None
+    def __init__(self,path):
+        self._db={}
+        self._path=path
+
 class Assembler(object):
     _base_dir=None
     _ignore_dirs=None
