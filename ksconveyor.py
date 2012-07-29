@@ -392,6 +392,10 @@ class KSAssembler(object):
                 part=self._conveyor.parts[s][p]
                 self._conveyor.templates[template_id].addPart(s,part)
 
+    def addpart(self,template_id,section,parts):
+        for part_id in parts:
+            self._conveyor.addPart(template_id,section,part_id)
+
     def mvpart(self,section,src_part_id,dst_part_id):
         self._conveyor.renamePart(section,src_part_id,dst_part_id)
 
@@ -482,6 +486,11 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('init')
     parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
 
+    parser_assemble=subparsers.add_parser('addpart')
+    parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
+    parser_assemble.add_argument('--section','-S',type=str,help='',required=True,default=None)
+    parser_assemble.add_argument('--parts','-p',type=str,help='',required=True,default=None)
+
     parser_assemble=subparsers.add_parser('mvpart')
     parser_assemble.add_argument('--section','-S',type=str,help='',required=True,default=None)
     parser_assemble.add_argument('--src','-s',type=str,help='',required=True,default=None)
@@ -515,6 +524,9 @@ if __name__ == '__main__':
     elif args.command=='mvpart':
         a=Assembler(args.base_dir,ignore_dirs)
         a.mvpart(args.section,args.src,args.dst)
+    elif args.command=='addpart':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.addpart(args.template_id,args.section,args.parts.split(','))
     elif args.command=='lsparts':
         a=Assembler(args.base_dir,ignore_dirs)
         a.lsparts(args.list_vars)
