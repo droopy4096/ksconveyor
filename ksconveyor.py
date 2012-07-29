@@ -347,7 +347,10 @@ class KSAssembler(object):
                 part=self._conveyor.parts[s][pn]
                 if list_vars:
                     p_vars=part.scanVars()
-                    vars_txt=" ( {0} )".format(" ".join(p_vars))
+                    if p_vars:
+                        vars_txt=" ( {0} )".format(" ".join(p_vars))
+                    else:
+                        vars_txt=""
                 else:
                     vars_txt=""
                 print(s + ' ' + pn+vars_txt)
@@ -361,7 +364,10 @@ class KSAssembler(object):
                     for p in template.parts[s].keys():
                         if list_vars:
                             p_vars=template.parts[s][p].scanVars()
-                            vars_txt=" ( {0} )".format(" ".join(p_vars))
+                            if p_vars:
+                                vars_txt=" ( {0} )".format(" ".join(p_vars))
+                            else:
+                                vars_txt=""
                         else:
                             vars_txt
                         print('  -- '+s+' '+p+vars_txt)
@@ -373,7 +379,11 @@ class KSAssembler(object):
                         p_vars=template.parts[s][p].scanVars()
                         for pv in p_vars:
                             all_vars.add(pv)
-                print("{0} ( {1} )".format(t, " ".join(all_vars)))
+                if all_vars:
+                    all_vars_txt=" ( {1} )".format(t, " ".join(all_vars))
+                else:
+                    all_vars_txt=""
+                print("{0}{1}".format(t, all_vars_txt))
             else:
                 print(t)
 
