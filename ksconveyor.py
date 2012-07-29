@@ -44,10 +44,6 @@ import os.path
 import re
 import ConfigParser
 
-## BASE_DIR='/srv/ks/conveyor'
-
-DECOR_DIR=1
-DECOR_FILE=2
 
 SECTIONS=('commands','packages','pre','post','post.header')
 
