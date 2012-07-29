@@ -51,130 +51,6 @@ DECOR_FILE=2
 
 SECTIONS=('commands','packages','pre','post','post.header')
 
-class ObsoleteCat(object):
-    _pre=None
-    _post=None
-    # _decorate_per_dir=None
-    _decor_mode=None
-    _ignore_dirs=None
-    _header_call=None
-    _translate=None
-    _vars=None
-    _lookup_mode=None
-
-    def __init__(self):
-        # self._decorate_per_dir=False
-        self._decor_mode=2
-        self._ignore_dirs=[]
-        self.resetDecor()
-        self._header_call=None
-        self._translate=False
-        self._translate_extractor=re.compile(r'@@(\w+)@@')
-        self._vars=set()
-        self._lookup_mode=False
-
-    def setTranslate(self,trans):
-        self._translate=trans
-
-    def setPreamble(self,pre):
-        self._pre=pre
-
-    def setPS(self,ps):
-        self._post=ps
-
-    def setDecor(self,decor):
-        self._decor_mode=decor
-
-    def resetDecor(self):
-        self._pre=''
-        self._post=''
-        self._header_call=None
-
-    def setIgnoreDirs(self,ignore_dirs):
-        self._ignore_dirs=ignore_dirs
-
-    def setHeaderCall(self,hc):
-        """function that would take 1 argument - DECOR_MODE"""
-        self._header_call=hc
-
-    def _var_lookup(self,var):
-        if os.environ.has_key(var):
-            return os.environ[var]
-        else:
-            return None
-
-    def setLookupMode(self,lm):
-        self._lookup_mode=lm
-
-    def seenVars(self):
-        return self._vars
-
-    def listVars(self,my_text):
-        return self._translate_extractor.findall(my_text)
-
-    def _translator(self,my_text):
-        sub_vars=self.listVars(my_text)
-        for sv in sub_vars:
-            self._vars.add(sv)
-        # print(sub_vars)
-        res_text=my_text
-        for my_var in sub_vars:
-            my_sub=self._var_lookup(my_var)
-            if not my_sub is None:
-                res_text=re.sub('@@'+my_var+'@@',my_sub,res_text)
-        return res_text
-
-    def echo(self,my_text):
-        if self._translate:
-            print_text=self._translator(my_text)
-        else:
-            print_text=my_text
-        if not self._lookup_mode:
-            print(print_text)
-
-    def __call__(self,path):
-        preamble=self._pre
-        ps=self._post
-        # dpd=self._decorate_per_dir
-        dpf=self._decor_mode & DECOR_FILE
-        dpd=self._decor_mode & DECOR_DIR
-        ignore_dirs=self._ignore_dirs
-
-        if os.path.isfile(path):
-            dir_basename=os.path.basename(os.path.dirname(path))
-            file_basename=os.path.basename(path)
-            if preamble:
-                self.echo(preamble.format(path=path,dir_basename=dir_basename,file_basename=file_basename))
-            if self._header_call:
-                self._header_call(DECOR_FILE)
-            f=open(path,'r')
-            self.echo(f.read())
-            f.close()
-            if ps:
-                self.echo(ps.format(path=path,dir_basename=dir_basename,file_basename=file_basename))
-        elif os.path.isdir(path):
-            dir_basename=os.path.basename(path)
-            if not (dir_basename in ignore_dirs):
-                if dpd:
-                    self.echo(preamble.format(path=path,dir_basename=dir_basename,file_basename=''))
-                    if self._header_call:
-                        self._header_call(DECOR_DIR)
-                listdir=os.listdir(path)
-                listdir.sort()
-                for filename in listdir:
-                    file_path=os.path.join(path,filename)
-                    if preamble and dpf:
-                        self.echo(preamble.format(path=file_path,dir_basename=dir_basename,file_basename=filename))
-                    if dpf and self._header_call:
-                        self._header_call(DECOR_FILE)
-                    f=open(file_path,'r')
-                    self.echo(f.read())
-                    f.close()
-                    if ps and dpf:
-                        self.echo(ps.format(path=file_path,dir_basename=dir_basename,file_basename=filename))
-                if dpd:
-                    self.echo(ps.format(path=path,dir_basename=dir_basename,file_basename=''))
-
 class KSPart(object):
     _name=None
     _path=None
@@ -474,6 +350,17 @@ class KSAssembler(object):
             for pn in self._conveyor.parts[s].keys():
                 print(s + ' ' + pn)
 
+    def listtemplates(self,list_parts=False):
+        for t in self._conveyor.templates.db.keys():
+            if list_parts:
+                print(t)
+                template=self._conveyor.templates[t]
+                for s in template.parts.keys():
+                    for p in template.parts[s].keys():
+                        print('  -- '+s+' '+p)
+            else:
+                print(t)
+
     def create(self,template_id,parts):
         # create FS layout
         self.setup(template_id)
@@ -486,7 +373,14 @@ class KSAssembler(object):
                 self._conveyor.templates[template_id].addPart(s,part)
 
     def clone(self,src_template_id,dst_template_id):
-        pass
+        template=self._conveyor.templates[src_template_id]
+        self.setup(dst_template_id)
+        for s in template.parts.keys():
+            section=template.parts[s]
+            for p in section.keys():
+                part=self._conveyor.parts[s][p]
+                self._conveyor.templates[dst_template_id].addPart(s,part)
+
 
     def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False):
         template=self._conveyor.templates[template_id]
@@ -554,141 +448,6 @@ class KSAssembler(object):
                         all_vars.add(v)
             print("## Seen vars:\n# "+"\n# ".join(all_vars))
 
-class RawAssembler(object):
-    _base_dir=None
-    _ignore_dirs=None
-    _translate=None
-
-    def __init__(self,base_dir,ignore_dirs):
-        self._base_dir=base_dir
-        self._ignore_dirs=ignore_dirs
-        self._translate=False
-
-    def setTranslate(self,trans):
-        self._translate=trans
-
-    def setup(self,template_id):
-        template_dir=os.path.join(self._base_dir,'templates',template_id)
-        ks_commands=os.path.join(template_dir,'commands')
-        ks_packages=os.path.join(template_dir,'packages')
-        ks_pre=os.path.join(template_dir,'pre')
-        ks_post=os.path.join(template_dir,'post')
-        ks_post_header=os.path.join(template_dir,'post.header')
-        def _my_mkdir(my_dir):
-            try:
-                os.makedirs(my_dir)
-            except OSError:
-                # very crude, should handle errorcode instead:
-                # OSError: [Errno 17] File exists: '
-                pass
-        _my_mkdir(ks_commands)
-        _my_mkdir(ks_packages)
-        _my_mkdir(ks_pre)
-        _my_mkdir(ks_post)
-        _my_mkdir(ks_post_header)
-
-    def listparts(self):
-        template_dir=os.path.join(self._base_dir,'parts')
-        ks_commands=os.path.join(template_dir,'commands')
-        ks_packages=os.path.join(template_dir,'packages')
-        ks_pre=os.path.join(template_dir,'pre')
-        ks_post=os.path.join(template_dir,'post')
-        ks_post_header=os.path.join(template_dir,'post.header')
-        
-        cat=Cat()
-        cat.setTranslate(self._translate)
-        # cat.echo('commands')
-        for cmd in os.listdir(ks_commands):
-            if not (cmd in self._ignore_dirs):
-                cat.echo('commands '+cmd)
-
-        for pkg in os.listdir(ks_packages):
-            if not (pkg in self._ignore_dirs):
-                cat.echo('packages '+pkg)
-
-        for pre in os.listdir(ks_pre):
-            if not (pre in self._ignore_dirs):
-                cat.echo('pre '+pre)
-
-        for post_header in os.listdir(ks_post_header):
-            if not (post_header in self._ignore_dirs):
-                cat.echo('post.header '+post_header)
-
-        for post in os.listdir(ks_post):
-            if not (post in self._ignore_dirs):
-                cat.echo('post '+post)
-
-    def create(self,template_id,parts):
-        parts_dir=os.path.join(self._base_dir,'parts')
-        
-        template_dir=os.path.join(self._base_dir,'templates',template_id)
-
-        cat=Cat()
-        cat.setTranslate(self._translate)
-        # create FS layout
-        self.setup(template_id)
-
-        # for p in parts.keys():
-        for p in SECTIONS:
-            # walking through sections: commands,packages,pre,post,post.header
-            if not parts.has_key(p):
-                continue
-            for pe in parts[p]:
-                dst_part=os.path.join(template_dir,p,pe)
-                src_part=os.path.join(os.path.relpath(parts_dir,os.path.join(template_dir,p)),p,pe)
-                try:
-                    os.symlink(src_part,dst_part)
-                except OSError:
-                    print("Can't link {1} to {0}, skipping".format(src_part,dst_part))
-
-    def clone(self,src_template_id,dst_template_id):
-        pass
-
-    def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False):
-        template_dir=os.path.join(self._base_dir,'templates',template_id)
-        ks_commands=os.path.join(template_dir,'commands')
-        ks_packages=os.path.join(template_dir,'packages')
-        ks_pre=os.path.join(template_dir,'pre')
-        ks_post=os.path.join(template_dir,'post')
-        ks_post_header=os.path.join(template_dir,'post.header')
-
-        ignore_dirs=self._ignore_dirs
-        cat=Cat()
-        cat.setTranslate(self._translate)
-        sub_cat=Cat()
-        sub_cat.setTranslate(self._translate)
-        cat.setIgnoreDirs(ignore_dirs)
-        if dry_run:
-            cat.setLookupMode(True)
-            sub_cat.setLookupMode(True)
-
-        cat.echo("## Auto-generated by conveyor line")
-        cat(ks_commands)
-
-        cat.echo("\n%packages "+pkg_opts)
-        cat(ks_packages)
-        cat.echo("%end\n")
-
-        cat.setPreamble("\n%pre")
-        cat.setPS("%end\n")
-        cat(ks_pre)
-
-        cat.setDecor(DECOR_FILE)
-        def post_header(x):
-            if x & DECOR_FILE:
-                sub_cat(ks_post_header)
-        cat.setHeaderCall(post_header)
-        cat.setPreamble("\n%post --erroronfail --log=/root/anaconda-{file_basename}.log")
-        cat(ks_post)
-        cat.resetDecor()
-
-        if dry_run:
-            sumvar_cat=Cat()
-        else:
-            sumvar_cat=cat
-        if var_summary:
-            sumvar_cat.echo("## Seen vars:\n# "+"\n# ".join(cat.seenVars().union(sub_cat.seenVars())))
-
 Assembler=KSAssembler
 
 if __name__ == '__main__':
@@ -711,8 +470,11 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('listparts')
 
     parser_assemble=subparsers.add_parser('listtemplates')
+    parser_assemble.add_argument('--list-parts',action='store_const', const=True,default=False,help='')
 
     parser_assemble=subparsers.add_parser('clone')
+    parser_assemble.add_argument('--src-template-id','-s',type=str,help='',required=True,default=None)
+    parser_assemble.add_argument('--dst-template-id','-d',type=str,help='',required=True,default=None)
 
     parser_assemble=subparsers.add_parser('create')
     parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
@@ -731,6 +493,12 @@ if __name__ == '__main__':
     elif args.command=='listparts':
         a=Assembler(args.base_dir,ignore_dirs)
         a.listparts()
+    elif args.command=='listtemplates':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.listtemplates(args.list_parts)
+    elif args.command=='clone':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.clone(args.src_template_id,args.dst_template_id)
     elif args.command=='create':
         a=Assembler(args.base_dir,ignore_dirs)
         my_parts={}
