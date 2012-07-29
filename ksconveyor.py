@@ -345,19 +345,39 @@ class KSAssembler(object):
         t.init()
         self._conveyor.templates.db[template_id]=t
 
-    def listparts(self):
+    def lsparts(self,list_vars=False):
         for s in SECTIONS:
             for pn in self._conveyor.parts[s].keys():
-                print(s + ' ' + pn)
+                part=self._conveyor.parts[s][pn]
+                if list_vars:
+                    p_vars=part.scanVars()
+                    vars_txt=" ( {0} )".format(" ".join(p_vars))
+                else:
+                    vars_txt=""
+                print(s + ' ' + pn+vars_txt)
 
-    def listtemplates(self,list_parts=False):
+    def lstemplates(self,list_parts=False,list_vars=False):
         for t in self._conveyor.templates.db.keys():
             if list_parts:
                 print(t)
                 template=self._conveyor.templates[t]
                 for s in template.parts.keys():
                     for p in template.parts[s].keys():
-                        print('  -- '+s+' '+p)
+                        if list_vars:
+                            p_vars=template.parts[s][p].scanVars()
+                            vars_txt=" ( {0} )".format(" ".join(p_vars))
+                        else:
+                            vars_txt
+                        print('  -- '+s+' '+p+vars_txt)
+            elif list_vars:
+                template=self._conveyor.templates[t]
+                all_vars=set()
+                for s in template.parts.keys():
+                    for p in template.parts[s].keys():
+                        p_vars=template.parts[s][p].scanVars()
+                        for pv in p_vars:
+                            all_vars.add(pv)
+                print("{0} ( {1} )".format(t, " ".join(all_vars)))
             else:
                 print(t)
 
@@ -371,6 +391,9 @@ class KSAssembler(object):
             for p in parts[s]:
                 part=self._conveyor.parts[s][p]
                 self._conveyor.templates[template_id].addPart(s,part)
+
+    def mvpart(self,section,src_part_id,dst_part_id):
+        self._conveyor.renamePart(section,src_part_id,dst_part_id)
 
     def clone(self,src_template_id,dst_template_id):
         template=self._conveyor.templates[src_template_id]
@@ -459,10 +482,17 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('init')
     parser_assemble.add_argument('--template-id','-t',type=str,help='',required=True,default=None)
 
-    parser_assemble=subparsers.add_parser('listparts')
+    parser_assemble=subparsers.add_parser('mvpart')
+    parser_assemble.add_argument('--section','-S',type=str,help='',required=True,default=None)
+    parser_assemble.add_argument('--src','-s',type=str,help='',required=True,default=None)
+    parser_assemble.add_argument('--dst','-d',type=str,help='',required=True,default=None)
 
-    parser_assemble=subparsers.add_parser('listtemplates')
+    parser_assemble=subparsers.add_parser('lsparts')
+    parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='')
+
+    parser_assemble=subparsers.add_parser('lstemplates')
     parser_assemble.add_argument('--list-parts',action='store_const', const=True,default=False,help='')
+    parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='')
 
     parser_assemble=subparsers.add_parser('clone')
     parser_assemble.add_argument('--src-template-id','-s',type=str,help='',required=True,default=None)
@@ -482,12 +512,15 @@ if __name__ == '__main__':
     elif args.command=='init':
         a=Assembler(args.base_dir,ignore_dirs)
         a.setup(args.template_id)
-    elif args.command=='listparts':
+    elif args.command=='mvpart':
         a=Assembler(args.base_dir,ignore_dirs)
-        a.listparts()
-    elif args.command=='listtemplates':
+        a.mvpart(args.section,args.src,args.dst)
+    elif args.command=='lsparts':
         a=Assembler(args.base_dir,ignore_dirs)
-        a.listtemplates(args.list_parts)
+        a.lsparts(args.list_vars)
+    elif args.command=='lstemplates':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.lstemplates(args.list_parts,args.list_vars)
     elif args.command=='clone':
         a=Assembler(args.base_dir,ignore_dirs)
         a.clone(args.src_template_id,args.dst_template_id)
