@@ -356,6 +356,7 @@ class KSAssembler(object):
                 if list_vars:
                     p_vars=part.scanVars()
                     if p_vars:
+                        p_vars.sort()
                         vars_txt=" ( {0} )".format(" ".join(p_vars))
                     else:
                         vars_txt=""
@@ -379,7 +380,9 @@ class KSAssembler(object):
                         if list_vars:
                             p_vars=template.parts[s][p].scanVars()
                             if p_vars:
-                                vars_txt=" ( {0} )".format(" ".join(p_vars))
+                                p_vars_sort=list(p_vars)
+                                p_vars_sort.sort()
+                                vars_txt=" ( {0} )".format(" ".join(p_vars_sort))
                             else:
                                 vars_txt=""
                         else:
@@ -400,7 +403,9 @@ class KSAssembler(object):
                         for pv in p_vars:
                             all_vars.add(pv)
                 if all_vars:
-                    all_vars_txt=" ( {1} )".format(t, " ".join(all_vars))
+                    all_vars_sorted=list(all_vars)
+                    all_vars_sorted.sort()
+                    all_vars_txt=" ( {1} )".format(t, " ".join(all_vars_sorted))
                 else:
                     all_vars_txt=""
                 print("{0}{1}".format(t, all_vars_txt))
