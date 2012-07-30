@@ -482,6 +482,7 @@ class KSAssembler(object):
             print("\n%end")
 
         ks_post_keys=ks_post.keys()
+        ks_post_keys.sort()
         for k in ks_post_keys:
             my_post=ks_post[k]
             print("\n%post --erroronfail --log=/root/anaconda-"+k+".log")
