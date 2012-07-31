@@ -106,17 +106,23 @@ class KSPart(object):
         f.close()
 
     def getVars(self):
-        return self._vars
+        my_vars=list(self._vars)
+        my_vars.sort()
+        return my_vars
 
     def listVars(self,my_text):
-        return self._translate_extractor.findall(my_text)
+        my_vars=self._translate_extractor.findall(my_text)
+        my_vars.sort()
+        return my_vars
 
     def scanVars(self):
         for l in self.lines():
             pre_vars=self._translate_extractor.findall(l)
             for v in pre_vars:
                 self._vars.add(v)
-        return self._vars
+        my_vars=list(self._vars)
+        my_vars.sort()
+        return my_vars
 
 
     def _var_lookup(self,var):
@@ -451,11 +457,12 @@ class KSAssembler(object):
         ignore_dirs=self._ignore_dirs
         if dry_run:
             if var_summary:
-                all_vars=set()
+                all_vars=[]
                 for s in template.parts.keys():
                     for p in template.parts[s].keys():
                         for v in template.parts[s][p].scanVars():
-                            all_vars.add(v)
+                            all_vars.append(v)
+                all_vars.sort()
                 print("## Seen vars:\n# "+"\n# ".join(all_vars))
             ## Nothing else to do on dry run
             return
@@ -497,11 +504,12 @@ class KSAssembler(object):
             print("\n%end")
 
         if var_summary:
-            all_vars=set()
+            all_vars=[]
             for s in template.parts.keys():
                 for p in template.parts[s].keys():
                     for v in template.parts[s][p].getVars():
-                        all_vars.add(v)
+                        all_vars.append(v)
+            all_vars.sort()
             print("## Seen vars:\n# "+"\n# ".join(all_vars))
 
 Assembler=KSAssembler
