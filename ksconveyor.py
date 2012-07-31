@@ -539,6 +539,8 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('lstemplates',help='List all available templates')
     parser_assemble.add_argument('--list-parts',action='store_const', const=True,default=False,help='List template parts')
     parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='List used meta-vars')
+    ##TODO - list all available parts and mark the ones used...
+    parser_assemble.add_argument('--list-all-parts',action='store_const', const=True,default=False,help='::TODO::List all available parts for every template, highlight the ones used')
 
     parser_assemble=subparsers.add_parser('clone',help='Clone existing template')
     parser_assemble.add_argument('--src-template-id','-s',type=str,help='Existing template name',required=True,default=None)
