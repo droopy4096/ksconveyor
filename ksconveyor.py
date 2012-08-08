@@ -162,14 +162,18 @@ class KSPartL(KSPart):
 class KSPartV(KSPartL):
     """Virtual part, needed for ad-hoc parts addition. Somewhat evil hacked"""
     def __init__(self,path,orig_path):
+        """call ancestor and ignore non-essential stuff"""
         # We'll ignore path relative to template... just store
         # origin's path
         super(KSPartV,self).__init__(orig_path,orig_path)
 
     def materialize(self):
+        """Materialize the link... not really important for this subclass"""
+        # We can't meterialize something that's virtual
         pass
 
     def setOrigPath(self,new_orig_path):
+        """Change the path to the origin. Should not really need it, but "just in case" """
         self._orig_path=new_orig_path
 
 class KSPartsDB(object):
