@@ -155,8 +155,22 @@ class KSPartL(KSPart):
 
         os.symlink(os.path.relpath(new_orig_path,my_dir),self._path)
         # src_part=os.path.join(os.path.relpath(parts_dir,os.path.join(template_dir,p)),p,pe)
+        self._orig_path=new_orig_path
 
     orig_path=property(getOrigPath,setOrigPath)
+
+class KSPartV(KSPartL):
+    """Virtual part, needed for ad-hoc parts addition. Somewhat evil hacked"""
+    def __init__(self,path,orig_path):
+        # We'll ignore path relative to template... just store
+        # origin's path
+        super(KSPartV,self).__init__(orig_path,orig_path)
+
+    def materialize(self):
+        pass
+
+    def setOrigPath(self,new_orig_path):
+        self._orig_path=new_orig_path
 
 class KSPartsDB(object):
     _db=None
@@ -243,13 +257,14 @@ class KSTemplate(object):
             if not self._parts.has_key(s):
                 self._parts[s]={}
 
-    def addPart(self,section,part):
+    def addPart(self,section,part,part_type=KSPartL):
         template_dir=self._path
         name=part.name
         section_dir=os.path.join(template_dir,section)
         tpart_path=os.path.join(section_dir,name)
 
-        p=KSPartL(tpart_path,part.path)
+        # p=KSPartL(tpart_path,part.path)
+        p=part_type(tpart_path,part.path)
         p.materialize()
         self._parts[section][name]=p
 
@@ -446,13 +461,19 @@ class KSAssembler(object):
                 self._conveyor.templates[dst_template_id].addPart(s,part)
 
 
-    def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False):
+    def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False,extra_parts=None):
         template=self._conveyor.templates[template_id]
         ks_commands=template.parts['commands']
         ks_packages=template.parts['packages']
         ks_pre=template.parts['pre']
         ks_post=template.parts['post']
         ks_post_header=template.parts['post.header']
+
+        if extra_parts:
+            for s in extra_parts.keys():
+                for p in extra_parts[s]:
+                    part=self._conveyor.parts[s][p]
+                    template.addPart(s,part,part_type=KSPartV)
 
         ignore_dirs=self._ignore_dirs
         if dry_run:
@@ -524,6 +545,7 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('assemble',help='process template sending resulting KS to stdout')
     parser_assemble.add_argument('--template-id','-t',type=str,help='Template ID',required=True,default=None)
     parser_assemble.add_argument('--packages-opts','-o',type=str,help='Options to pass to %%packages macro',default='--nobase')
+    parser_assemble.add_argument('--extra-parts','-x',type=str,help='Extra parts in format: "section1:partA,partB;section2:partD',required=False,default=None)
     parser_assemble.add_argument('--translate',action='store_const', const=True,default=False,help='Translate/extract meta-vars in parts (Using @@VAR@@ form and $VAR environment variable)')
     parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='Also list all available meta-vars')
     parser_assemble.add_argument('--dry-run',action='store_const', const=True,default=False,help="Don't perform any real action")
@@ -564,7 +586,21 @@ if __name__ == '__main__':
     if args.command == 'assemble':
         a=Assembler(args.base_dir,ignore_dirs)
         a.setTranslate(args.translate)
-        a.assemble(args.template_id,args.packages_opts,var_summary=args.list_vars,dry_run=args.dry_run)
+
+        if args.extra_parts:
+            extra_parts={}
+            s_chunks=args.extra_parts.split(';')
+            for s_str in s_chunks:
+                s_chunks_split=s_str.split(':')
+                s=s_chunks_split[0]
+                part_chunks=s_chunks_split[1].split(',')
+                extra_parts[s]=[]
+                for p in part_chunks:
+                    extra_parts[s].append(p)
+        else:
+            extra_parts=None
+
+        a.assemble(args.template_id,args.packages_opts,var_summary=args.list_vars,dry_run=args.dry_run,extra_parts=extra_parts)
     elif args.command=='init':
         a=Assembler(args.base_dir,ignore_dirs)
         a.setup(args.template_id)
