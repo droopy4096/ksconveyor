@@ -533,7 +533,7 @@ class KSAssembler(object):
                     print(l,end='')
                 # the_cat(my_part.path)
 
-        cat(ks_commands)
+        cat(ks_commands,'commands')
 
         print("\n%packages "+pkg_opts)
         cat(ks_packages,'packages')
