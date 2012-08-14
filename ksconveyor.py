@@ -610,7 +610,7 @@ if __name__ == '__main__':
     parser_assemble.add_argument('--packages-opts','-o',type=str,help='Options to pass to %%packages macro',default='--nobase')
     parser_assemble.add_argument('--extra-parts','-x',type=str,help='Extra parts in format: "section1:partA,partB;section2:partD',required=False,default=None)
     parser_assemble.add_argument('--translate',action='store_const', const=True,default=False,help='Translate/extract meta-vars in parts (Using @@VAR@@ form and $VAR environment variable)')
-    parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='Also list all available meta-vars')
+    parser_assemble.add_argument('--list-all-vars',action='store_const', const=True,default=False,help='Also list all available meta-vars')
     parser_assemble.add_argument('--dry-run',action='store_const', const=True,default=False,help="Don't perform any real action")
 
     parser_assemble=subparsers.add_parser('init',help='Initialize template FS structure')
@@ -663,7 +663,7 @@ if __name__ == '__main__':
         else:
             extra_parts=None
 
-        a.assemble(args.template_id,args.packages_opts,var_summary=args.list_vars,dry_run=args.dry_run,extra_parts=extra_parts)
+        a.assemble(args.template_id,args.packages_opts,var_summary=args.list_all_vars,dry_run=args.dry_run,extra_parts=extra_parts)
     elif args.command=='init':
         a=Assembler(args.base_dir,ignore_dirs)
         a.setup(args.template_id)
