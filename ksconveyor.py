@@ -402,11 +402,17 @@ class KSAssembler(object):
                     vars_txt=""
                 print(s + ' ' + pn+vars_txt)
 
-    def lstemplates(self,list_parts=False,list_vars=False):
+    def lstemplates(self,list_parts=False,list_vars=False,list_all_parts=False):
         for t in self._conveyor.templates.db.keys():
             if list_parts:
                 print(t)
                 template=self._conveyor.templates[t]
+                all_parts={}
+                if list_all_parts:
+                    for s in self._conveyor.parts.db.keys():
+                        all_parts[s]=set()
+                        for p in self._conveyor.parts[s].keys():
+                            all_parts[s].add(p)
                 for s in SECTIONS:
                     #for s in template.parts.keys():
                     if template.parts.has_key(s):
@@ -415,6 +421,8 @@ class KSAssembler(object):
                     else:
                         p_list=[]
                     for p in p_list:
+                        if list_all_parts:
+                            all_parts[s].remove(p)
                         if list_vars:
                             p_vars=template.parts[s][p].scanVars()
                             if p_vars:
@@ -425,8 +433,22 @@ class KSAssembler(object):
                                 vars_txt=""
                         else:
                             vars_txt=""
-                        print('  -- '+s+' '+p+vars_txt)
+                        print('  ++ '+s+' '+p+vars_txt)
+                    if all_parts.has_key(s):
+                        for p in all_parts[s]:
+                            if list_vars:
+                                p_vars=self._conveyor.parts[s][p].scanVars()
+                                if p_vars:
+                                    p_vars_sort=list(p_vars)
+                                    p_vars_sort.sort()
+                                    vars_txt=" ( {0} )".format(" ".join(p_vars_sort))
+                                else:
+                                    vars_txt=""
+                            else:
+                                vars_txt=""
+                            print('  -- '+s+' '+p+vars_txt)
             elif list_vars:
+
                 template=self._conveyor.templates[t]
                 all_vars=set()
                 for s in SECTIONS:
@@ -609,8 +631,7 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('lstemplates',help='List all available templates')
     parser_assemble.add_argument('--list-parts',action='store_const', const=True,default=False,help='List template parts')
     parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='List used meta-vars')
-    ##TODO - list all available parts and mark the ones used...
-    parser_assemble.add_argument('--list-all-parts',action='store_const', const=True,default=False,help='::TODO::List all available parts for every template, highlight the ones used')
+    parser_assemble.add_argument('--list-all-parts',action='store_const', const=True,default=False,help='List all available parts for every template, highlight the ones used')
 
     parser_assemble=subparsers.add_parser('clone',help='Clone existing template')
     parser_assemble.add_argument('--src-template-id','-s',type=str,help='Existing template name',required=True,default=None)
@@ -655,7 +676,7 @@ if __name__ == '__main__':
         a.lsparts(args.list_vars)
     elif args.command=='lstemplates':
         a=Assembler(args.base_dir,ignore_dirs)
-        a.lstemplates(args.list_parts,args.list_vars)
+        a.lstemplates(args.list_parts,args.list_vars,args.list_all_parts)
     elif args.command=='clone':
         a=Assembler(args.base_dir,ignore_dirs)
         a.clone(args.src_template_id,args.dst_template_id)
