@@ -292,13 +292,15 @@ class KSTemplate(object):
         tpart_path=os.path.join(section_dir,name)
         p=part_type(tpart_path,part.path)
         self._parts[section][name]=p
+        return p
 
     def addPart(self,section,part,part_type=KSPartL):
         """Attach part and make it persitant. Can only take parts
         subclassed from KSPartL"""
         self.attachPart(section,part,part_type)
-        p=self._parts[section][part.name]=p
+        p=self._parts[section][part.name]
         p.materialize()
+        return p
 
     def getParts(self):
         return self._parts
