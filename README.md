@@ -1,5 +1,5 @@
-ksconveyor
-==========
+Intro
+=====
 
 Conveyor belt for Fedora/RedHat Kickstart file production. 
 
@@ -38,5 +38,60 @@ Sample FS structure::
             header1 -> ../../parts/post.header/header1
          templateB/
           ...
+
+Sample use
+==========
+
+Querying
+--------
+
+List all templates, their parts and vars used::
+
+  $ ksconveyor.py lstemplates --list-vars --list-parts
+
+List all templates starting with 'bare'::
+
+  $ ksconveyor.py lstemplates --list-vars --list-part bare
+
+
+New templates
+-------------
+
+From scratch
+~~~~~~~~~~~~
+
+Init::
+
+  $ ksconveyor.py init -t my-new-template
+
+Add parts to section "%pre"::
+
+  $ ksconveyor.py addpart -S pre -p part1,part2,part3
+
+Fom a copy
+~~~~~~~~~~
+
+Copy "baremetal" template to "vm" template::
+
+  ksconveyor.py clone -s baremetal -d vm
+
+
+Manipulating templates
+----------------------
+
+Rename part (it will rename all references too)::
+
+  $ ksconveyor.py mvpart -S pre -s part1 -d default-pre
+
+Add part to existing template::
+
+  $ ksconveyor.py addpart -S pre -p part1,part2,part3
+
+Remove parts from template
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Removal was not implemented deliberately. Operation is simply a::
+
+  $ unlink <BASE_DIR>/templates/<template_id>/<section>/<part_name>
 
 
