@@ -39,6 +39,12 @@ Sample FS structure::
          templateB/
           ...
 
+Each part can contain "variables" - set of characters enclused in '@@', like so::
+  
+  ...
+  mkdir @@DATADIR@@/my_dir
+  ...
+
 Sample use
 ==========
 
@@ -68,8 +74,8 @@ Add parts to section "%pre"::
 
   $ ksconveyor.py addpart -S pre -p part1,part2,part3
 
-Fom a copy
-~~~~~~~~~~
+From a copy
+~~~~~~~~~~~
 
 Copy "baremetal" template to "vm" template::
 
@@ -94,4 +100,27 @@ Removal was not implemented deliberately. Operation is simply a::
 
   $ unlink <BASE_DIR>/templates/<template_id>/<section>/<part_name>
 
+Generating KickStart
+--------------------
+
+Simple invocation, which assumes you'll be modifying kickstart manually replacing all vars. Assemble Kickstart using "baremetal" template, list all encountered vars in the header and save into '../servers/server1.ks'::
+
+  $ ./ksconveyor.py assemble -t baremetal --list-all-vars > ../servers/server1.ks
+
+More advanced use. Substitute encountered vars with their value from Environment variables::
+
+  $ DATADIR=/root/ks_dir ./ksconveyor.py assemble -t baremetal --translate --list-all-vars > ../servers/server1.ks
+
+Lets crank it up a notch and exclude one part ('pre:part1') that we think is not needed for the server1::
+
+  $ DATADIR=/root/ks_dir ./ksconveyor.py assemble -t baremetal -x pre:part1 --translate --list-all-vars > ../servers/server1.ks
+
+Now lets add a part that is not currently part of template::
+
+  $ DATADIR=/root/ks_dir ./ksconveyor.py assemble -t baremetal -e post:optional -x pre:part1 --translate --list-all-vars > ../servers/server1.ks
+
+Notes
+~~~~~
+
+After kickstart has been generated - go over it carefully and make sure it does what you think it should. You will notice that header contains all necessary information to re-create this template, in most scenarios that is the information you want to use to create similar kickstart rather than taking a copy of generated one. After all - some parts may have been updated to include up-to-date info etc. and you don't want to fix those manually after the install (or during!)
 
