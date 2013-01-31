@@ -550,6 +550,7 @@ class KSAssembler(object):
         if exclude_parts:
             print("##EXCLUDES: "+"{0}".format(" ".join(["{0}:{1}".format(s,",".join(exclude_parts[s])) for s in exclude_parts.keys()])))
 
+        print("##LEGACY MODE: {0}".format("On" if legacy_mode else "Off"))
         print("")
 
         ignore_dirs=self._ignore_dirs
