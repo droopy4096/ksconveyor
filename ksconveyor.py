@@ -522,7 +522,7 @@ class KSAssembler(object):
                 self._conveyor.templates[dst_template_id].addPart(s,part)
 
 
-    def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False,extra_parts=None,exclude_parts=None):
+    def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False,extra_parts=None,exclude_parts=None,legacy_mode=False):
         template=self._conveyor.templates[template_id]
         ks_commands=template.parts['commands']
         ks_packages=template.parts['packages']
@@ -599,7 +599,7 @@ class KSAssembler(object):
 
         print("\n%packages "+pkg_opts)
         cat(ks_packages,'packages')
-        print("%end\n")
+        if not legacy_mode: print("%end\n")
 
         ks_pre_keys=ks_pre.keys()
         ks_pre_keys.sort()
@@ -609,7 +609,7 @@ class KSAssembler(object):
             print('##PART: pre:{0}'.format(my_pre.name))
             for l in my_pre.lines():
                 print(l,end='')
-            print("\n%end")
+            if not legacy_mode: print("\n%end")
 
         ks_post_keys=ks_post.keys()
         ks_post_keys.sort()
@@ -620,7 +620,7 @@ class KSAssembler(object):
             print('##PART: post:{0}'.format(my_post.name))
             for l in my_post.lines():
                 print(l,end='')
-            print("\n%end")
+            if not legacy_mode: print("\n%end")
 
 
 Assembler=KSAssembler
@@ -640,6 +640,7 @@ if __name__ == '__main__':
     parser_assemble.add_argument('--translate',action='store_const', const=True,default=False,help='Translate/extract meta-vars in parts (Using @@VAR@@ form and $VAR environment variable)')
     parser_assemble.add_argument('--list-all-vars',action='store_const', const=True,default=False,help='Also list all available meta-vars')
     parser_assemble.add_argument('--dry-run',action='store_const', const=True,default=False,help="Don't perform any real action")
+    parser_assemble.add_argument('--legacy-mode',action='store_const', const=True,default=False,help="Legacy mode: disable newer features of Anaconda, like %end tags etc.")
 
     parser_assemble=subparsers.add_parser('init',help='Initialize template FS structure')
     parser_assemble.add_argument('--template-id','-t',type=str,help='Template ID',required=True,default=None)
@@ -709,7 +710,8 @@ if __name__ == '__main__':
                    var_summary=args.list_all_vars,
                    dry_run=args.dry_run,
                    extra_parts=extra_parts,
-                   exclude_parts=exclude_parts)
+                   exclude_parts=exclude_parts,
+                   legacy_mode=args.legacy_mode)
     elif args.command=='init':
         a=Assembler(args.base_dir,ignore_dirs)
         a.setup(args.template_id)
