@@ -247,12 +247,18 @@ class KSTemplate(object):
     # template ID
     _name=None
     _path=None
+    _info=None
     def __init__(self,template_id,path):
         self._name=template_id
         self._parts={}
         self._path=path
 
     def load(self):
+        info_path=os.path.join(self._path,'README')
+        if os.path.isfile(info_path):
+            info_file=open(info_path,'r')
+            self._info=info_file.read()
+            info_file.close()
         for s in SECTIONS:
             self._parts[s]={}
             s_path=os.path.join(self._path,s)
@@ -304,6 +310,13 @@ class KSTemplate(object):
 
     def getParts(self):
         return self._parts
+
+    def getInfo(self):
+        if self._info is None:
+            return ""
+        return self._info
+
+    info=property(getInfo)
 
     parts=property(getParts)
 
@@ -419,7 +432,14 @@ class KSAssembler(object):
                     vars_txt=""
                 print(s + ' ' + pn+vars_txt)
 
-    def lstemplates(self,filter=None,list_parts=False,list_vars=False,list_all_parts=False):
+    def _print_template_info(self,t):
+        template=self._conveyor.templates[t]
+        lines=template.info.split("\n")
+        prefix="  # "
+        lprefix="\n"+prefix
+        print(prefix,lprefix.join(lines))
+
+    def lstemplates(self,filter=None,list_parts=False,list_vars=False,list_all_parts=False,list_info=False):
         if filter:
             re_filter=re.compile(filter)
         for t in self._conveyor.templates.db.keys():
@@ -429,6 +449,7 @@ class KSAssembler(object):
             if list_parts:
                 print(t)
                 template=self._conveyor.templates[t]
+                if list_info: self._print_template_info(t)
                 all_parts={}
                 if list_all_parts:
                     for s in self._conveyor.parts.db.keys():
@@ -491,8 +512,10 @@ class KSAssembler(object):
                 else:
                     all_vars_txt=""
                 print("{0}{1}".format(t, all_vars_txt))
+                if list_info: self._print_template_info(t)
             else:
                 print(t)
+                if list_info: self._print_template_info(t)
 
     def create(self,template_id,parts):
         # create FS layout
@@ -521,6 +544,14 @@ class KSAssembler(object):
                 part=self._conveyor.parts[s][p]
                 self._conveyor.templates[dst_template_id].addPart(s,part)
 
+
+    def info(self,template_id,var_summary=False):
+        template=self._conveyor.templates[template_id]
+        if template.info:
+            print(template.info)
+        else:
+            print("")
+        
 
     def assemble(self,template_id,pkg_opts,var_summary=False,dry_run=False,extra_parts=None,exclude_parts=None,legacy_mode=False):
         template=self._conveyor.templates[template_id]
@@ -662,12 +693,16 @@ if __name__ == '__main__':
     parser_assemble=subparsers.add_parser('lstemplates',help='List all available templates')
     parser_assemble.add_argument('--list-parts',action='store_const', const=True,default=False,help='List template parts')
     parser_assemble.add_argument('--list-vars',action='store_const', const=True,default=False,help='List used meta-vars')
+    parser_assemble.add_argument('--list-info',action='store_const', const=True,default=False,help='Print template info')
     parser_assemble.add_argument('--list-all-parts',action='store_const', const=True,default=False,help='List all available parts for every template, highlight the ones used')
     parser_assemble.add_argument('filter', type=str, nargs='?', default=None, help='Regexp filter')
 
     parser_assemble=subparsers.add_parser('clone',help='Clone existing template')
     parser_assemble.add_argument('--src-template-id','-s',type=str,help='Existing template name',required=True,default=None)
     parser_assemble.add_argument('--dst-template-id','-d',type=str,help='New template name',required=True,default=None)
+
+    parser_assemble=subparsers.add_parser('info',help='Template information')
+    parser_assemble.add_argument('--template-id','-t',type=str,help='Template ID',required=True,default=None)
 
     parser_assemble=subparsers.add_parser('create',help='Create new template')
     parser_assemble.add_argument('--template-id','-t',type=str,help='Template ID',required=True,default=None)
@@ -727,7 +762,7 @@ if __name__ == '__main__':
         a.lsparts(args.list_vars)
     elif args.command=='lstemplates':
         a=Assembler(args.base_dir,ignore_dirs)
-        a.lstemplates(args.filter,args.list_parts,args.list_vars,args.list_all_parts)
+        a.lstemplates(args.filter,args.list_parts,args.list_vars,args.list_all_parts,args.list_info)
     elif args.command=='clone':
         a=Assembler(args.base_dir,ignore_dirs)
         a.clone(args.src_template_id,args.dst_template_id)
@@ -738,4 +773,7 @@ if __name__ == '__main__':
         for s in SECTIONS:
             my_parts[s]=vargs[s].split(',')
         a.create(args.template_id,my_parts)
+    elif args.command=='info':
+        a=Assembler(args.base_dir,ignore_dirs)
+        a.info(args.template_id)
 
