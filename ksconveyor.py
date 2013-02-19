@@ -437,7 +437,7 @@ class KSAssembler(object):
         lines=template.info.split("\n")
         prefix="  # "
         lprefix="\n"+prefix
-        print(prefix,lprefix.join(lines))
+        print(prefix+lprefix.join(lines))
 
     def lstemplates(self,filter=None,list_parts=False,list_vars=False,list_all_parts=False,list_info=False):
         if filter:
