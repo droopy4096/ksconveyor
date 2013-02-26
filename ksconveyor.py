@@ -672,7 +672,7 @@ if __name__ == '__main__':
     parser_assemble.add_argument('--translate',action='store_const', const=True,default=False,help='Translate/extract meta-vars in parts (Using @@VAR@@ form and $VAR environment variable)')
     parser_assemble.add_argument('--list-all-vars',action='store_const', const=True,default=False,help='Also list all available meta-vars')
     parser_assemble.add_argument('--dry-run',action='store_const', const=True,default=False,help="Don't perform any real action")
-    parser_assemble.add_argument('--legacy-mode',action='store_const', const=True,default=False,help="Legacy mode: disable newer features of Anaconda, like %end tags etc.")
+    parser_assemble.add_argument('--legacy-mode',action='store_const', const=True,default=False,help="Legacy mode: disable newer features of Anaconda, like %%end tags etc.")
 
     parser_assemble=subparsers.add_parser('init',help='Initialize template FS structure')
     parser_assemble.add_argument('--template-id','-t',type=str,help='Template ID',required=True,default=None)
